@@ -2,8 +2,8 @@
 #
 # uninstall.sh — reverse setup.sh.
 #
-# Removes every symlink in ~/.claude that points into this repo, and restores
-# the most recent ~/.claude/settings.json.backup-* made by setup.sh. If there
+# Removes every symlink in ~/.claude (and ~/.claude/skills) that points into
+# this repo, and restores the most recent ~/.claude/settings.json.backup-* made by setup.sh. If there
 # is no backup and settings.json still references this repo's hooks, it is
 # removed. Nothing else in ~/.claude is touched.
 #
@@ -45,7 +45,8 @@ if [[ ! -d "$CLAUDE_HOME" ]]; then
 fi
 
 echo "[uninstall] 1) Removing symlinks in $CLAUDE_HOME that point into $REPO_ROOT"
-for item in "$CLAUDE_HOME"/* "$CLAUDE_HOME"/.[!.]*; do
+# Top-level links, plus per-skill links setup.sh makes inside a pre-existing skills/ directory.
+for item in "$CLAUDE_HOME"/* "$CLAUDE_HOME"/.[!.]* "$CLAUDE_HOME"/skills/*; do
     [[ -L "$item" ]] || continue
     target=$(readlink "$item")
     case "$target" in

@@ -137,6 +137,16 @@ for item in "$CLAUDE_DIR"/*; do
     [[ "$name" == settings* ]] && continue
     # CLAUDE.md / AGENTS.md are linked from the repo root below.
     [[ "$name" == "CLAUDE.md" || "$name" == "AGENTS.md" ]] && continue
+    # Claude Code keeps its own account-synced skills in ~/.claude/skills/synced.
+    # When skills/ is already a real directory, link each harness skill into it
+    # instead of replacing the directory.
+    if [[ "$name" == "skills" && -d "$CLAUDE_HOME/skills" && ! -L "$CLAUDE_HOME/skills" ]]; then
+        for child in "$item"/*; do
+            [[ -e "$child" ]] || continue
+            link_one "$child" "$CLAUDE_HOME/skills/$(basename "$child")"
+        done
+        continue
+    fi
     link_one "$item" "$CLAUDE_HOME/$name"
 done
 for file in CLAUDE.md AGENTS.md; do

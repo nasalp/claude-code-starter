@@ -199,7 +199,9 @@ cd "$AI_RULES_REPO"
 Re-running `setup.sh` on an already-installed machine changes nothing and
 reports `ok` for every entry. Stale symlinks are refreshed; existing non-empty
 directories and regular files at managed paths are never overwritten (setup
-stops and tells you what to move aside). Use `--no-hooks` to leave
+stops and tells you what to move aside). The one exception is
+`~/.claude/skills/`: if it already exists (Claude Code keeps its own synced
+skills there), each harness skill is linked into it individually. Use `--no-hooks` to leave
 `settings.json` alone.
 
 > **Note:** the settings template enables `defaultMode: acceptEdits` and

@@ -41,10 +41,24 @@ assert_eq '{"theme":"dark"}' "$(cat "$FAKE_HOME/.claude/settings.json")" "uninst
 links=$(find "$FAKE_HOME/.claude" -maxdepth 1 -type l | wc -l | tr -d ' ')
 assert_eq 0 "$links" "uninstall removes every symlink"
 
-# 5. A user-owned, non-empty directory is never overwritten.
-mkdir -p "$FAKE_HOME/.claude/skills/my-skill"
+# 5. A pre-existing skills/ directory (Claude Code's synced skills) is kept:
+#    harness skills are linked into it one by one, and uninstall removes only those.
+mkdir -p "$FAKE_HOME/.claude/skills/synced/some-skill"
 run_setup >/dev/null; rc=$?
-assert_eq 1 "$rc" "setup.sh refuses (exit 1) when ~/.claude/skills is a user directory"
-[[ -d "$FAKE_HOME/.claude/skills/my-skill" ]] && pass "user skill directory is preserved" || fail "user skill directory is preserved"
+assert_eq 0 "$rc" "setup.sh succeeds when ~/.claude/skills already exists"
+[[ ! -L "$FAKE_HOME/.claude/skills" ]] && pass "existing skills/ directory is not replaced" || fail "existing skills/ directory is not replaced"
+[[ -d "$FAKE_HOME/.claude/skills/synced/some-skill" ]] && pass "existing synced skills are preserved" || fail "existing synced skills are preserved"
+[[ -L "$FAKE_HOME/.claude/skills/tdd-workflow" ]] && pass "harness skills are linked into skills/" || fail "harness skills are linked into skills/"
+assert_contains "$(run_setup)" "Summary: 0 change(s)" "re-running with per-skill links changes nothing"
+run_uninstall >/dev/null
+skill_links=$(find "$FAKE_HOME/.claude/skills" -maxdepth 1 -type l | wc -l | tr -d ' ')
+assert_eq 0 "$skill_links" "uninstall removes the per-skill links"
+[[ -d "$FAKE_HOME/.claude/skills/synced/some-skill" ]] && pass "uninstall leaves synced skills alone" || fail "uninstall leaves synced skills alone"
+
+# 6. Any other user-owned, non-empty directory is never overwritten.
+mkdir -p "$FAKE_HOME/.claude/agents/my-agent"
+run_setup >/dev/null; rc=$?
+assert_eq 1 "$rc" "setup.sh refuses (exit 1) when ~/.claude/agents is a user directory"
+[[ -d "$FAKE_HOME/.claude/agents/my-agent" ]] && pass "user agents directory is preserved" || fail "user agents directory is preserved"
 
 finish
