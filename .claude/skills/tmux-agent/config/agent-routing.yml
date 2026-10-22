@@ -1,0 +1,82 @@
+# Role -> provider routing, consensus, escalation, and budget defaults.
+#
+# Read by scripts/lib/agent-routing.sh / agent-budget.sh / agent-escalation.sh (via yq).
+# Every value is overridable by env: AGENT_ROUTE_<ROLE>, AGENT_MAX_<CAP>, etc.
+#
+# Manager-model directive: Claude is orchestrator/planner/architect/arbitrator/reconciler,
+# NOT the default implementer. Composer is the default worker; Gemini the default reviewer.
+
+roles:
+  planner:    claude
+  architect:  claude
+  builder:    composer        # cheap worker; escalates to escalate_model on the triggers below
+  watcher:    composer        # cheap-first single-watcher route; fleet below
+  reviewer:   gemini          # default reviewer = Gemini Pro (premium-grade, cheaper than Claude/Codex)
+  arbitrator: claude
+  reconciler: claude
+
+# Cheap watcher fleet (genuinely cheap, distinct quotas for free isolation).
+# Cost order: composer (cheapest) < gemini-flash < gemini(pro) < codex ~= claude (premium).
+# Codex is NOT a cheap watcher (priced ~= Claude); it is a premium second-opinion /
+# escalation reviewer only. See docs/phase-4-builder-tiers.md.
+watcher_fleet: [composer, gemini-flash]   # Cursor quota + Google quota = 2-quota isolation
+
+# Tier per role, used by the cost ledger / budget counters to bucket premium vs cheap.
+role_tier:
+  planner:    premium
+  architect:  premium
+  builder:    cheap
+  watcher:    cheap
+  reviewer:   premium
+  arbitrator: premium
+  reconciler: premium
+
+# Reasoning effort per role (low|medium|high) — a cost lever on top of model choice.
+# Cheap watchers run low; judgment roles run high. Escalation BUMPS effort before
+# switching model (a medium->high retry is far cheaper than jumping to a premium model).
+# Maps to each provider's mechanism (codex flag / claude thinking budget / else no-op).
+# Env override: AGENT_EFFORT_<ROLE> (e.g. AGENT_EFFORT_BUILDER=high).
+role_effort:
+  planner:    high
+  architect:  high
+  builder:    medium
+  watcher:    low
+  reviewer:   medium
+  arbitrator: high
+  reconciler: high
+
+consensus:
+  planning:       [claude, gemini]          # +optional secondary; implementation consensus = none
+  review_default: [gemini]
+  review_enhanced: [gemini, composer]
+  review_escalated: [gemini, claude]
+  implementation: []                        # single builder; no implementation consensus
+
+escalation:
+  builder_escalate_after_n: 3               # cheap builder fails phase GREEN N times -> escalate
+  escalate_on_unresolved_reject: true       # watcher REJECT unresolved after 1 cheap round -> escalate
+  escalate_model: claude:opus               # provider:model the builder escalates to (or codex)
+  confidence_min: 0.7                        # verdict confidence below this -> escalate
+  sensitive_paths:                           # any changed file matching -> escalate to premium review
+    - "**/SecurityConfig*"
+    - "**/security/**"
+    - "**/auth/**"
+    - "**/payment*/**"
+    - "**/*payment*"
+    - "**/db/migration/**"
+    - "**/V[0-9]*__*.sql"
+    - "**/*.sql"
+    - "**/migrations/**"
+    - "**/entity/**"
+    - "**/model/**"
+  # Quota isolation: when builder=composer (Cursor quota), keep >=1 non-cursor watcher
+  # (codex or the on-demand claude veto) as the cross-quota survivor.
+  cross_quota_survivor_required: true
+
+budget:
+  max_iterations:          40
+  max_premium_calls:       20
+  max_cheap_calls:         200
+  max_estimated_cost_usd:  25
+  max_wall_clock_seconds:  14400            # 4h
+  stop_on_unchanged_diff:  true             # halt repeated no-op iterations

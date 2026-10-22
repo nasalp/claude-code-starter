@@ -1,0 +1,26 @@
+# security.md compliance signal — no hardcoded secrets.
+#
+# Patterns below match common secret-bearing literals. The .compliance.regex
+# format is conservative — false positives produce noise, so each line is
+# anchored on a syntactic context that legitimate code rarely produces.
+#
+# Caveat: these patterns find the LITERAL leak, not the conceptual one.
+# Use a real secret-scanner (gitleaks, trufflehog) for production gating;
+# this signal is for trend visibility in the heartbeat log.
+
+# Hardcoded API keys / tokens in Java/Kotlin/TS source: literal assignment
+# of an OpenAI-style key.
+=\s*"sk-[A-Za-z0-9]{20,}"
+=\s*"sk_live_[A-Za-z0-9]{20,}"
+=\s*"sk_test_[A-Za-z0-9]{20,}"
+
+# Bearer token literals (frequent copy-paste from curl examples).
+=\s*"Bearer [A-Za-z0-9._-]{20,}"
+
+# Slack/GitHub PATs.
+xox[pborsa]-[A-Za-z0-9-]{10,}
+ghp_[A-Za-z0-9]{30,}
+
+# Hardcoded password literal (matches `password = "<8+ chars>"`, common in
+# fixtures that drift into prod).
+\bpassword\s*=\s*"[^"\n]{8,}"

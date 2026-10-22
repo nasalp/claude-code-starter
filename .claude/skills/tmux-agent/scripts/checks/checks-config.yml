@@ -1,0 +1,7 @@
+mock_patterns:
+  - "@MockitoBean"
+  - "@MockBean"
+  - "jest.mock"
+  - "vi.mock"
+  - "mock.patch"
+  - "unittest.mock.patch"

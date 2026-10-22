@@ -1,0 +1,106 @@
+# Controlled vocabulary for the learning-promotion pipeline.
+#
+# The `topic:` field on a learning or rule must come from this list.
+# Convergence detection in /promote-learnings is by topic string equality —
+# not semantic similarity, not filename match. Adding a new topic is a PR.
+#
+# Keep entries terse. The vocabulary is the routing key, not the documentation.
+
+topics:
+  # Testing
+  - testing.unit
+  - testing.integration
+  - testing.e2e
+  - testing.mutation
+  - testing.contract
+  - testing.flake
+  - testing.parallel
+  - testing.fixtures
+  - testing.acceptance           # ATDD/BATS/Cucumber — language-agnostic
+                                 # acceptance suites used as parity oracles
+                                 # (e.g. Python source-of-truth vs Java port)
+  - testing.oracle-fidelity      # tests pass but miss behavioural drift —
+                                 # fragment-only assertions, presence-only
+                                 # checks, shape-not-semantics, etc.
+
+  # Database
+  - db.migration
+  - db.schema
+  - db.idempotency
+  - db.tenant-isolation
+  - db.indexing
+  - db.partitioning
+  - db.replica
+  - db.cdc
+
+  # Security
+  - security.secrets
+  - security.auth
+  - security.authz
+  - security.pii
+  - security.rate-limit
+  - security.proxy-headers
+  - security.audit-log
+
+  # Infra / deploy
+  - infra.cdk
+  - infra.terraform
+  - infra.gha
+  - infra.deploy
+  - infra.ecs
+  - infra.lambda
+  - infra.observability
+  - infra.health-checks
+
+  # Frontend
+  - frontend.spa
+  - frontend.bundling
+  - frontend.testing
+  - frontend.routing
+  - frontend.auth
+  - frontend.state
+
+  # Java / Spring
+  - java.spring.profiles
+  - java.spring.beans
+  - java.spring.testing
+  - java.spring.upgrades        # major-version migrations (Boot 3→4, Spring AI 1→2)
+  - java.spring.ai
+  - java.jpa
+  - java.observability
+
+  # Build / package
+  - build.maven                 # multi-module, plugins, fat-jar layout
+  - build.gradle
+
+  # Node / TypeScript
+  - node.express
+  - node.observability
+  - node.deps
+  - node.runtime
+
+  # Process / governance
+  - process.review
+  - process.ci
+  - process.docs
+  - process.spec
+
+  # Architecture
+  - arch.hexagonal
+  - arch.module-boundaries
+  - arch.api-design
+  - arch.events
+  - arch.caching
+
+# Scope tags determine destination directory in ai-rules.
+scopes:
+  - universal           # → .claude/rules/ (top-level)
+  - common              # → .claude/rules/common/
+  - java-spring         # → .claude/rules/java/
+  - typescript          # → .claude/rules/typescript/
+  - web                 # → .claude/rules/web/
+  - python              # → .claude/rules/python/
+  - php                 # → .claude/rules/php/
+  - postgres-only       # → SKILL only, never a rule
+  - aws-only            # → SKILL only, never a rule
+  - project-specific    # → NEVER promoted; stays project-local

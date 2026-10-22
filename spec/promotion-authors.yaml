@@ -1,0 +1,18 @@
+# Identity table for the learning-promotion pipeline.
+#
+# Two git author emails on the `emails:` list of the same identity are treated
+# as the same human for the authorship-independence convergence check.
+#
+# Used to enable solo-operator mode: when the union of canonicalized authors
+# across all scanned projects is a single identity, the authorship check is
+# skipped and a callout is added to the promotion PR body. See
+# `.claude/commands/promote-learnings.md` → "Solo-operator relaxation".
+#
+# Adding a new identity is a regular PR. Do not add identities to launder a
+# copy-paste promotion past the check — that defeats the purpose.
+
+identities:
+  - name: senior-reviewer
+    emails:
+      - reviewer@example.com
+      - reviewer@example.org

@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/ai-rules/verdict-schemas/reviewer.schema.json",
+  "title": "Reviewer verdict",
+  "description": "Structured output the reviewer (Gemini by default) MUST emit per review.",
+  "type": "object",
+  "required": ["verdict", "confidence", "blocking_issues"],
+  "additionalProperties": false,
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": ["approve", "reject"]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "blocking_issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule", "severity", "description", "required_change"],
+        "additionalProperties": false,
+        "properties": {
+          "rule": { "type": "string" },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "normal", "low"]
+          },
+          "description": { "type": "string", "minLength": 1 },
+          "required_change": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "non_blocking_issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["description"],
+        "properties": {
+          "rule": { "type": "string" },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "normal", "low"]
+          },
+          "description": { "type": "string", "minLength": 1 },
+          "required_change": { "type": "string" }
+        }
+      }
+    }
+  }
+}

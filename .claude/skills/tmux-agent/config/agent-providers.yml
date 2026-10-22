@@ -1,0 +1,129 @@
+# Agent provider registry — single source of truth for model/provider invocation.
+#
+# Read by scripts/lib/agent-providers.sh (via yq v4). Adding a provider needs ONLY a
+# new entry here + a routing default in agent-routing.yml — no workflow redesign.
+#
+# Fields per provider:
+#   tier              premium | standard | cheap   (drives budget counters + escalation)
+#   runtime           cli                           (only cli today; future: openai-compat)
+#   command           the binary invoked on PATH
+#   default_model     model id when caller passes "" (empty)
+#   prompt_delivery   stdin | arg                   (how the prompt reaches the CLI)
+#   auth_env          env var the CLI reads for auth (informational; for preflight checks)
+#   add_dir_supported true|false                    (false => caller must mount rules in-workspace)
+#   invocation        command template. Placeholders: {model} {repo} {prompt_file} {out}
+#                     {tools} {dirs} {approval_mode} (role-gated by compose_provider_cmd)
+#                     {prompt_file} is the redirected-stdin source when prompt_delivery=stdin.
+#                     Keep templates DETERMINISTIC (no timestamps/random) to preserve caching.
+
+providers:
+  # ---- premium: planners / arbitrators / escalation only ----
+  claude:
+    tier: premium
+    runtime: cli
+    command: claude
+    default_model: sonnet
+    prompt_delivery: stdin
+    auth_env: ANTHROPIC_API_KEY
+    add_dir_supported: true
+    # Reasoning effort = extended-thinking token budget (env, not a flag).
+    reasoning_style: env
+    reasoning_map:
+      low:    "MAX_THINKING_TOKENS=0"
+      medium: "MAX_THINKING_TOKENS=8000"
+      high:   "MAX_THINKING_TOKENS=24000"
+    # Headroom wrapper is prepended by the resolver when HEADROOM_LOCAL_CLAUDE_PROXY_PYTHON
+    # is exported; this template is the un-wrapped form.
+    invocation: >-
+      claude --print --model {model} --tools {tools}
+      --permission-mode bypassPermissions
+      {dirs}
+      < {prompt_file} > {out} 2>&1
+
+  codex:
+    tier: premium
+    runtime: cli
+    command: codex
+    default_model: ""        # codex CLI picks its own default; no --model flag emitted
+    prompt_delivery: stdin
+    auth_env: OPENAI_API_KEY
+    add_dir_supported: true
+    # Reasoning effort = native codex flag (inline, via the {effort} placeholder).
+    reasoning_style: flag
+    reasoning_map:
+      low:    "-c model_reasoning_effort=low"
+      medium: "-c model_reasoning_effort=medium"
+      high:   "-c model_reasoning_effort=high"
+    invocation: >-
+      codex exec {effort} --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox
+      -C {repo} --add-dir $HOME/.claude -
+      < {prompt_file} > {out} 2>&1
+
+  # ---- premium reviewer: default review role ----
+  gemini:
+    tier: premium
+    runtime: cli
+    command: gemini
+    default_model: gemini-2.5-pro
+    prompt_delivery: stdin
+    auth_env: GEMINI_API_KEY
+    add_dir_supported: true   # native: --include-directories (repeatable) mounts the rule tree
+    invocation: >-
+      gemini --model {model} --approval-mode {approval_mode} --output-format text
+      {dirs}
+      --prompt "" < {prompt_file} > {out} 2>&1
+
+  # ---- cheap reviewer/watcher: Gemini Flash (much cheaper than Pro; large context) ----
+  # Same CLI as `gemini`, different model + tier. Used for the cheap watcher fleet;
+  # the premium `gemini` (Pro) entry above stays the default final reviewer.
+  gemini-flash:
+    tier: cheap
+    runtime: cli
+    command: gemini
+    default_model: gemini-2.5-flash
+    prompt_delivery: stdin
+    auth_env: GEMINI_API_KEY
+    add_dir_supported: true
+    invocation: >-
+      gemini --model {model} --approval-mode {approval_mode} --output-format text
+      {dirs}
+      --prompt "" < {prompt_file} > {out} 2>&1
+
+  # ---- cheap worker: default builder + cheap watcher (Composer via Cursor agent) ----
+  composer:
+    tier: cheap
+    runtime: cli
+    command: agent              # Cursor CLI; binary is cursor-agent, invoked as `agent`
+    default_model: composer-2.5-fast
+    prompt_delivery: stdin
+    auth_env: CURSOR_API_KEY
+    add_dir_supported: false    # no --add-dir => mount-rules-into-worktree.sh stages .cursor/rules
+    invocation: >-
+      agent --print --force --trust --model {model}
+      --output-format stream-json --stream-partial-output
+      --workspace {repo} < {prompt_file} > {out} 2>&1
+
+  # ---- parked: unverified templates. Not wired into routing defaults. ----
+  # Adjust command/flags for your install before enabling. Reachable via an
+  # OpenAI-compatible/codex path; left as scaffolding for extensibility.
+  deepseek:
+    tier: cheap
+    runtime: cli
+    command: opencode           # unverified — adjust for your install
+    default_model: deepseek-chat
+    prompt_delivery: stdin
+    auth_env: DEEPSEEK_API_KEY
+    add_dir_supported: false
+    invocation: >-
+      opencode run --model {model} --cwd {repo} < {prompt_file} > {out} 2>&1
+
+  qwen:
+    tier: cheap
+    runtime: cli
+    command: qwen               # unverified — adjust for your install
+    default_model: qwen2.5-coder
+    prompt_delivery: stdin
+    auth_env: DASHSCOPE_API_KEY
+    add_dir_supported: false
+    invocation: >-
+      qwen --model {model} --workdir {repo} < {prompt_file} > {out} 2>&1

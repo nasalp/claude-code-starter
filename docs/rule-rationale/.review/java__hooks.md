@@ -1,0 +1,3 @@
+VERDICT: OK
+ISSUES:
+- none. All directives intact: frontmatter paths (4 globs) unchanged; config location "~/.claude/settings.json" preserved; all 3 PostToolUse hooks present with identical commands ("google-java-format", "checkstyle", "./mvnw compile"/"./gradlew compileJava"). Wording compressions are equivalent ("Auto-format `.java` files after edit" → "auto-format `.java` after edit"; "Run style checks after editing Java files" → "style checks after editing Java"). The extends-pointer to common/hooks.md is preserved. The original carries NO Why/Calibration/Cross-refs/Background content, so the absent rationale file is correct (nothing to move), not a deletion.

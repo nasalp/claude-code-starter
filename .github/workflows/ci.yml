@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # Devs install the harness on macOS and Linux — test both.
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install yq (macOS)
+        if: runner.os == 'macOS'
+        run: brew install yq
+
+      - name: Tool versions
+        run: |
+          bash --version | head -1
+          node --version
+          python3 --version
+          jq --version
+          yq --version
+
+      - name: Run test suite
+        run: bash tests/run.sh
+
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck installer, uninstaller and tests (errors only)
+        run: shellcheck --severity=error setup.sh uninstall.sh tests/*.sh

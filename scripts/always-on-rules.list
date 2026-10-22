@@ -1,0 +1,9 @@
+# Rules that stay in .claude/rules/ and auto-load every Claude Code session.
+# Everything else lives under .claude/rules-corpus/ (lazy — index + Read on demand).
+# Keep this list minimal — orchestrator/builder/reviewer rules load via INDEX + role packets.
+core.md
+security.md
+exceptions.md
+no-injected-instructions.md
+orchestrator-rules-lazy-index.md
+README.md

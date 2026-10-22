@@ -1,0 +1,256 @@
+{
+  "skipDangerousModePermissionPrompt": true,
+  "defaultMode": "acceptEdits",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{SCRIPTS}}/session-start.js\""
+          }
+        ],
+        "description": "Load previous context and detect package manager on new session"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"{{HOOKS}}/spec-first-check.sh\""
+          }
+        ],
+        "description": "Multi-language spec-first enforcement with git awareness"
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"{{HOOKS}}/require-test-first.sh\""
+          }
+        ],
+        "description": "Warn when production code is edited without a test file (warnings only per harness convention)"
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"{{HOOKS}}/validate-skill-frontmatter.sh\""
+          }
+        ],
+        "description": "Validate SKILL.md frontmatter has canonical fields (name, description, origin, triggers)"
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"{{HOOKS}}/block-dev-server-outside-tmux.sh\""
+          }
+        ],
+        "description": "Block dev servers outside tmux (logs would be lost)"
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"{{HOOKS}}/tmux-reminder.sh\""
+          }
+        ],
+        "description": "Warn when long-running commands aren't in tmux"
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"{{HOOKS}}/git-push-reminder.sh\""
+          }
+        ],
+        "description": "Pre-push verification reminder"
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{SCRIPTS}}/doc-file-warning.js\""
+          }
+        ],
+        "description": "Warn about non-standard documentation files"
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{SCRIPTS}}/suggest-compact.js\""
+          }
+        ],
+        "description": "Suggest manual compaction at logical intervals"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"{{SKILLS}}/continuous-learning-v2/hooks/observe.sh\"",
+            "async": true,
+            "timeout": 10
+          }
+        ],
+        "description": "Capture tool use observations for continuous learning"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const i=JSON.parse(d);const cmd=i.tool_input?.command||'';if(/gh pr create/.test(cmd)){const out=i.tool_output?.output||'';const m=out.match(/https:\\\\/\\\\/github.com\\\\/[^/]+\\\\/[^/]+\\\\/pull\\\\/\\\\d+/);if(m){console.error('[Hook] PR created: '+m[0])}}}catch{}console.log(d)})\""
+          }
+        ],
+        "description": "Log PR URL after creation"
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{SCRIPTS}}/post-edit-format.js\""
+          }
+        ],
+        "description": "Auto-format JS/TS files after edits"
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{SCRIPTS}}/post-edit-typecheck.js\""
+          }
+        ],
+        "description": "TypeScript check after editing .ts/.tsx files"
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{SCRIPTS}}/post-edit-console-warn.js\""
+          }
+        ],
+        "description": "Warn about console.log after edits"
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"{{HOOKS}}/auto-test.sh\"",
+            "async": true,
+            "timeout": 120
+          }
+        ],
+        "description": "Run relevant tests after edits (debounced 30s, auto-detects build tool)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"{{SKILLS}}/continuous-learning-v2/hooks/observe.sh\"",
+            "async": true,
+            "timeout": 10
+          }
+        ],
+        "description": "Capture tool use results for continuous learning"
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{SCRIPTS}}/pre-compact.js\""
+          }
+        ],
+        "description": "Save state before context compaction"
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{SCRIPTS}}/check-console-log.js\""
+          }
+        ],
+        "description": "Check for console.log in modified files after each response"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"{{HOOKS}}/verify-before-stop.sh\"",
+            "timeout": 300
+          }
+        ],
+        "description": "Run full test suite before session ends (escape: SKIP_VERIFY_STOP=true)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"{{HOOKS}}/detect-structure-change.sh\"",
+            "timeout": 15
+          }
+        ],
+        "description": "Detect structure drift; suggest /user:refresh-project"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"{{HOOKS}}/triage-check.sh\""
+          }
+        ],
+        "description": "Triage check: 3-agent review (QA, Dev, DevOps) before session end"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{SCRIPTS}}/session-end.js\""
+          }
+        ],
+        "description": "Persist session state on end"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{SCRIPTS}}/evaluate-session.js\""
+          }
+        ],
+        "description": "Evaluate session for extractable patterns"
+      }
+    ]
+  }
+}

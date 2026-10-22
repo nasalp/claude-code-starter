@@ -1,0 +1,9 @@
+# observability.md compliance signal — pull-only metrics policy.
+#
+# The rule (CRITICAL) forbids pushing metrics via OTLP. Hits below indicate a
+# project re-introduced the OtlpMeterRegistry classpath dependency or
+# explicitly re-enabled the push exporter, both of which silently double-
+# publish in production.
+
+io\.micrometer\.registry\.otlp\.OtlpMeterRegistry
+management\.otlp\.metrics\.export\.enabled\s*=\s*true

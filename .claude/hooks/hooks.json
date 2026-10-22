@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/block-dev-server-outside-tmux.sh"
+          }
+        ],
+        "description": "Warn when dev servers are launched outside tmux (logs are lost when the bash shell exits). Backed by the BATS-tested .sh hook of the same name; warnings only."
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/tmux-reminder.sh"
+          }
+        ],
+        "description": "Remind to use tmux for long-running commands. Backed by the BATS-tested .sh hook of the same name; warnings only."
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/git-push-reminder.sh"
+          }
+        ],
+        "description": "Remind to review changes before pushing. Backed by the BATS-tested .sh hook of the same name; warnings only."
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/doc-file-warning.js\""
+          }
+        ],
+        "description": "Doc file warning: warn about non-standard documentation files (exit code 0; warns only)"
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/suggest-compact.js\""
+          }
+        ],
+        "description": "Suggest manual compaction at logical intervals"
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/orchestrator-no-direct-impl.sh"
+          }
+        ],
+        "description": "Mixed-model: when AGENT_ROLE=orchestrator, warn if Claude edits production source instead of delegating to a builder (agent_spawn). Inert in normal sessions; warns only. Backed by the BATS-tested .sh hook of the same name."
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/skills/continuous-learning-v2/hooks/observe.sh",
+            "async": true,
+            "timeout": 10
+          }
+        ],
+        "description": "Capture tool use observations for continuous learning"
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pre-compact.js\""
+          }
+        ],
+        "description": "Save state before context compaction"
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/session-start.js\""
+          }
+        ],
+        "description": "Load previous context and detect package manager on new session"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/check-rules-staleness.sh"
+          }
+        ],
+        "description": "Warn if the ai-rules .claude/rules/ tree has not been updated in 14 days (drift signal). Resolution order: AI_RULES_REPO env var, ${CLAUDE_PLUGIN_ROOT}, two levels above the hook script, $HOME/.claude. Set SKIP_STALENESS=true to silence."
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/notify-pr-created.sh"
+          }
+        ],
+        "description": "Log PR URL and provide review command after PR creation. Backed by notify-pr-created.sh + BATS."
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/notify-build-complete.sh",
+            "async": true,
+            "timeout": 30
+          }
+        ],
+        "description": "Async marker after frontend build commands. Backed by notify-build-complete.sh + BATS."
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/post-edit-format.js\""
+          }
+        ],
+        "description": "Auto-format JS/TS files after edits (auto-detects Biome or Prettier)"
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/post-edit-typecheck.js\""
+          }
+        ],
+        "description": "TypeScript check after editing .ts/.tsx files"
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/post-edit-console-warn.js\""
+          }
+        ],
+        "description": "Warn about console.log statements after edits"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/skills/continuous-learning-v2/hooks/observe.sh",
+            "async": true,
+            "timeout": 10
+          }
+        ],
+        "description": "Capture tool use results for continuous learning"
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check-console-log.js\""
+          }
+        ],
+        "description": "Check for console.log in modified files after each response"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/session-end.js\""
+          }
+        ],
+        "description": "Persist session state on end"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/evaluate-session.js\""
+          }
+        ],
+        "description": "Evaluate session for extractable patterns"
+      }
+    ]
+  }
+}
